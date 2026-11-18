@@ -1,0 +1,42 @@
+# The files and settings the job tracker expects. Every value here is empty.
+# Put real values only in the files and settings themselves, never in this repository.
+
+[files you make]
+# A Google client file for a desktop app with read access to Gmail
+secrets/credentials.json =
+# The search key for the industry lookups, on one line (optional)
+secrets/tavily_key.txt =
+# The database, made from schema.sql: sqlite3 db/tracker.db < schema.sql
+db/tracker.db =
+# An empty file. The industry lookups run only while it exists (optional)
+logs/lookups_on =
+
+[files the code writes]
+# The Gmail sign in, written by: venv/bin/python -m scheduler.gmail_renew
+secrets/token.json =
+# When the sign in was renewed, and the reminder's own state
+secrets/gmail_renewal.json =
+secrets/gmail_reminder_state.json =
+# The heartbeat, the locks and the logs
+logs/ =
+# The daily backups made by housekeeping
+db/backups/ =
+
+[environment, all optional]
+# Leave a value out to use the default written in the code (shown after #)
+OLLAMA_HOST =                    # http://localhost:11434
+OLLAMA_MODEL =                   # llama3.1:8b
+OLLAMA_NUM_CTX =                 # 8192
+OLLAMA_TIMEOUT =                 # 120 seconds
+GMAIL_CREDENTIALS_PATH =         # secrets/credentials.json
+GMAIL_TOKEN_PATH =               # secrets/token.json
+GMAIL_DB_PATH =                  # db/tracker.db
+GMAIL_INITIAL_LOOKBACK_DAYS =    # 180
+GMAIL_MAX_MESSAGES =             # 500
+
+[placeholders in the code]
+# scheduler/launchd_run.sh: replace with your own user name
+YOUR_USER =
+# ingest/content_check.py USER_NAME_TOKENS: the names emails use for you
+YOUR_FIRST_NAME =
+YOUR_LAST_NAME =

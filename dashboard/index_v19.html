@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Tracker v19</title>
+<style>
+  :root {
+    --ink: #E7EFEE; --ink-soft: #9DB0AF; --ink-faint: #5f6e6d;
+    --paper: #080c0d; --panel: #0d1112; --panel-raised: #131718;
+    --line: #2e3a3a; --line-soft: #161a1b; --line-strong: #9DB0AF;
+    --primary: #9DB0AF; --secondary: #5CC8CD; --tertiary: #9EA7BA;
+    --accent: #5CC8CD; --accent-soft: rgba(92, 200, 205, 0.12);
+    --amber: #d9a441; --amber-soft: rgba(217, 164, 65, 0.12);
+    --red: #d67a6c; --red-soft: rgba(214, 122, 108, 0.12);
+    --plum: #9EA7BA; --plum-soft: rgba(158, 167, 186, 0.12);
+    --up: #5CC8CD; --down: #d67a6c;
+    --mono: "Geist Mono", "SFMono-Regular", "SF Mono", Consolas, monospace;
+    --sans: "Geist", -apple-system, "Segoe UI", system-ui, sans-serif;
+    --radius: 10px; --section-gap: 24px;
+    --page-bg: radial-gradient(1250px 900px at 63% 42%, #111c1d 0%, #0b1112 52%, #080c0d 100%);
+  }
+  html[data-theme="light"] {
+    --ink: #14181a; --ink-soft: #55625f; --ink-faint: #8a9694;
+    --paper: #f4f6f5; --panel: #ffffff; --panel-raised: #eef1f0;
+    --line: #dde3e1; --line-soft: #e8ebea; --line-strong: #55625f;
+    --primary: #3d5f5c; --secondary: #1f8a8f; --tertiary: #55625f;
+    --accent: #1f8a8f; --accent-soft: rgba(31, 138, 143, 0.10);
+    --amber: #9a7517; --amber-soft: rgba(154, 117, 23, 0.10);
+    --red: #b34a3a; --red-soft: rgba(179, 74, 58, 0.10);
+    --plum: #5f5b7a; --plum-soft: rgba(95, 91, 122, 0.10);
+    --up: #1f8a8f; --down: #b34a3a;
+    --page-bg: radial-gradient(1250px 900px at 63% 42%, #f7f9f8 0%, #eef2f1 60%, #e4e9e7 100%);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased;
+    min-height: 100vh; background: var(--page-bg); background-attachment: fixed;
+  }
+  a { color: inherit; }
+  button, select, input { font-family: inherit; }
+
+  .app-shell { display: flex; min-height: 100vh; }
+  .sidebar { width: 240px; flex-shrink: 0; background: var(--panel); border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; padding: 20px 14px; position: sticky; top: 0; height: 100vh; }
+  .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 20px; }
+  .brand-mark { font-size: 18px; color: var(--accent); }
+  .brand-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .brand-sub { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); margin-top: 1px; }
+  .sidebar-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+  .nav-item { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 9px 10px; border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--ink-soft);
+    cursor: pointer; transition: background-color 0.1s ease, color 0.1s ease; }
+  .nav-item:hover { background: var(--panel-raised); color: var(--ink); }
+  .nav-item.active { background: var(--panel-raised); color: var(--ink); }
+  .nav-item .badge { font-family: var(--mono); font-size: 10px; font-weight: 500; padding: 1px 7px;
+    border-radius: 999px; background: var(--line-soft); color: var(--ink-soft); }
+  .nav-item .badge.red { background: var(--red-soft); color: var(--red); }
+  .nav-item .badge.review-badge { background: var(--plum-soft); color: var(--plum); }
+  .sidebar-footer { display: flex; flex-direction: column; gap: 12px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+  .theme-toggle { display: flex; background: var(--panel-raised); border: 1px solid var(--line); border-radius: 8px; padding: 3px; gap: 2px; }
+  .theme-opt { flex: 1; background: transparent; border: none; border-radius: 6px; padding: 6px; cursor: pointer; font-size: 13px; opacity: 0.5; }
+  .theme-opt.active { background: var(--panel); opacity: 1; }
+
+  .content-area { flex: 1; min-width: 0; padding: 28px 36px 80px; }
+  .content-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 24px; }
+  .page-heading { font-size: 22px; font-weight: 600; color: var(--ink); margin: 0; }
+  .content-header .synced { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); }
+  .content-header .synced .dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--up); margin-right:6px; }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .summary { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 28px; }
+  .summary .cell { background: linear-gradient(to bottom, rgba(92,200,205,0.06), var(--panel) 60%);
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; display: flex; flex-direction: column; }
+  .summary .label { font-size: 12px; color: var(--ink-soft); }
+  .summary .num-row { display: flex; align-items: flex-start; justify-content: space-between; margin-top: 6px; }
+  .summary .num { font-size: 26px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .summary .num.accent { color: var(--accent); } .summary .num.amber { color: var(--amber); } .summary .num.red { color: var(--red); }
+  .summary .footer { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line-soft); }
+  .summary .footer-headline { font-size: 12px; font-weight: 600; color: var(--ink); }
+  .summary .footer-sub { font-size: 11px; color: var(--ink-faint); margin-top: 2px; }
+
+  .section { margin-bottom: 36px; }
+  .section-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+  .section-head h2 { font-size: 15px; font-weight: 600; margin: 0; }
+  .hint { font-size: 12px; color: var(--ink-faint); font-weight: 400; }
+
+  .review-table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line-strong);
+    border-radius: var(--radius); overflow: hidden; }
+  .review-table thead th { text-align: left; font-size: 11px; font-weight: 600; color: var(--ink-faint);
+    padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel-raised); }
+  .review-table th.review-th-actions { text-align: right; }
+  .review-table tbody td { padding: 14px 16px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+  .review-table tbody tr:last-child td { border-bottom: none; }
+  .review-item .company { font-weight: 600; font-size: 14px; }
+  .review-item .company .via { display: block; font-family: var(--mono); font-size: 11px; color: var(--ink-faint); font-weight: 400; margin-top: 2px; }
+  .review-item .evidence { font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
+  .review-item .evidence .subj { color: var(--ink); font-weight: 500; }
+  .review-item .actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+  .btn { font-size: 12px; font-weight: 500; padding: 7px 14px; border-radius: var(--radius);
+    border: 1px solid var(--line-strong); cursor: pointer; white-space: nowrap; background: transparent;
+    color: var(--ink-soft); display: inline-flex; align-items: center; gap: 5px;
+    transition: background-color 0.1s ease, border-color 0.1s ease, color 0.1s ease; }
+  .btn-keep:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .btn-drop:hover { background: var(--red-soft); border-color: var(--red); color: var(--red); }
+  .btn-primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .btn-primary:hover { background: #d8dadb; }
+  .btn-sm { padding: 4px 9px; font-size: 11px; }
+  .btn-mark { border-color: var(--amber); color: var(--amber); }
+  .btn-mark:hover { background: var(--amber-soft); border-color: var(--amber); color: var(--amber); }
+  .pipe-actions { white-space: nowrap; text-align: right; }
+  .pipe-actions .btn { margin-left: 6px; }
+  .submitted-badge { font-family: var(--mono); font-size: 11px; color: var(--accent); white-space: nowrap; }
+  .empty-state { background: var(--panel); border: 1px dashed var(--line-strong); border-radius: var(--radius);
+    padding: 22px; text-align: center; color: var(--ink-faint); font-size: 13px; }
+
+  .dialog-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+    z-index: 100; align-items: center; justify-content: center; }
+  .dialog-overlay.visible { display: flex; }
+  .dialog-box { background: var(--panel-raised); border: 1px solid var(--line-strong); border-radius: var(--radius);
+    padding: 22px; width: 380px; max-width: 90vw; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+  .dialog-title { font-size: 16px; font-weight: 600; color: var(--ink); }
+  .dialog-desc { font-size: 13px; color: var(--ink-soft); margin-top: 5px; line-height: 1.5; }
+  .dialog-fields { display: flex; flex-direction: column; gap: 14px; margin-top: 18px; }
+  .field-row { display: flex; gap: 12px; }
+  .field-row .field { flex: 1; }
+  .field label { display: block; font-size: 12px; font-weight: 500; color: var(--ink-soft); margin-bottom: 5px; }
+  .field input { width: 100%; font-size: 13px; padding: 8px 10px; border: 1px solid var(--line-strong);
+    border-radius: 6px; background: var(--panel); color: var(--ink); }
+  .field input:focus { outline: none; border-color: var(--accent); }
+  .dialog-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+
+  .moved-list { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .moved-row { display: grid; grid-template-columns: 1.6fr 1fr auto; gap: 14px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line-soft); }
+  .moved-row:last-child { border-bottom: none; }
+  .moved-row .company { font-weight: 600; font-size: 13px; }
+  .moved-row .company .role { display: block; font-weight: 400; font-size: 12px; color: var(--ink-faint); margin-top: 1px; }
+  .moved-row .pill { justify-self: start; }
+  .moved-row .when { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); justify-self: end; }
+
+  .controls-row { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .search-box { flex: 1; min-width: 220px; position: relative; }
+  .search-box input { width: 100%; font-size: 13px; padding: 8px 12px 8px 32px;
+    border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); color: var(--ink); }
+  .search-box input::placeholder { color: var(--ink-faint); }
+  .search-box input:focus { outline: none; border-color: var(--accent); }
+  .search-box .icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--ink-faint); font-size: 13px; pointer-events: none; }
+  .dropdown { font-size: 13px; font-weight: 500; padding: 9px 32px 9px 14px; border: 1px solid var(--line-strong);
+    border-radius: var(--radius); background: var(--panel) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%23a8adae'/></svg>") no-repeat right 14px center;
+    color: var(--ink); cursor: pointer; appearance: none; -webkit-appearance: none; min-width: 150px; }
+  .dropdown:hover { border-color: var(--ink-soft); background-color: var(--panel-raised); }
+  .dropdown:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+
+  table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  thead th { text-align: left; font-size: 11px; font-weight: 600; color: var(--ink-faint); padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--panel-raised); user-select: none; }
+  tbody td { padding: 12px 14px; font-size: 13px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; color: var(--ink-soft); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--panel-raised); }
+  tbody tr.hidden-row { display: none; }
+  .company-cell .name { font-weight: 600; color: var(--ink); }
+  .company-cell .role { display: block; font-size: 12px; color: var(--ink-faint); margin-top: 1px; }
+  .tag-unconfirmed { color: var(--amber); font-family: var(--mono); font-size: 10px; margin-left: 4px; }
+
+  .pill { font-family: var(--mono); font-size: 11px; padding: 3px 8px; border-radius: var(--radius); display: inline-block; white-space: nowrap; }
+  .pill-applied { background: #e6e9ea; color: #55625f; }
+  .pill-assessment { background: var(--amber-soft); color: var(--amber); }
+  .pill-interview { background: var(--accent-soft); color: var(--accent); }
+  .pill-rejected { background: var(--red-soft); color: var(--red); }
+  .pill-withdrawn { background: var(--plum-soft); color: var(--plum); }
+
+  .industry-tag { font-size: 12px; color: var(--ink-soft); }
+  .no-results { text-align: center; padding: 28px; color: var(--ink-faint); font-size: 13px; background: var(--panel); border: 1px solid var(--line); border-top: none; display: none; }
+
+  .stale-list { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .stale-row { display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: 14px; align-items: center; padding: 13px 16px; border-bottom: 1px solid var(--line-soft); }
+  .stale-row:last-child { border-bottom: none; }
+  .stale-row .company { font-weight: 600; font-size: 13px; }
+  .stale-row .company .role { display: block; font-weight: 400; font-size: 12px; color: var(--ink-faint); margin-top: 1px; }
+  .stale-row .lastsignal { font-size: 12px; color: var(--ink-soft); }
+  .stale-row .since { font-family: var(--mono); font-size: 12px; color: var(--red); text-align: right; }
+
+  .card { background: var(--panel); border: 1px solid var(--line); padding: 20px; border-radius: var(--radius); }
+  .card h3 { font-size: 13px; font-weight: 600; margin: 0 0 4px; }
+  .card .card-sub { font-size: 11px; color: var(--ink-faint); margin-bottom: 16px; }
+  .metrics-top { display: grid; grid-template-columns: 1fr; gap: var(--section-gap); margin: var(--section-gap) 0; }
+  .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--section-gap); margin-bottom: var(--section-gap); }
+
+  .legend-row { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-soft); }
+  .legend-swatch { width: 9px; height: 9px; border-radius: 2px; }
+
+  .chart-card { position: relative; }
+  .chart-card svg { display: block; width: 100%; aspect-ratio: 720 / 220; height: auto; max-height: 260px; }
+  .chart-line { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .chart-line-rejected { stroke: var(--red); opacity: 0.9; }
+  .chart-gridline { stroke: var(--line); stroke-width: 1; }
+  .chart-dot { fill: var(--panel); stroke: var(--ink); stroke-width: 2; cursor: pointer; }
+  .chart-dot:hover { r: 5; fill: var(--ink); }
+  .chart-dot-rejected { stroke: var(--red); }
+  .chart-dot-rejected:hover { fill: var(--red); }
+  .chart-axis-label { font-family: var(--mono); font-size: 10px; fill: var(--ink-faint); }
+  .chart-tooltip { position: absolute; background: var(--panel-raised); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 8px 10px; font-size: 12px; pointer-events: none; display: none; z-index: 10; min-width: 150px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+  .chart-tooltip.visible { display: block; }
+  .chart-tooltip .tt-row { display: flex; align-items: center; gap: 6px; padding: 2px 0; }
+  .chart-tooltip .tt-swatch { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+  .chart-tooltip .tt-label { color: var(--ink-soft); }
+  .chart-tooltip .tt-val { margin-left: auto; font-family: var(--mono); font-weight: 600; color: var(--ink); }
+  .chart-tooltip .tt-total { display: flex; margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--line); font-size: 11px; font-weight: 600; color: var(--ink-soft); }
+  .chart-tooltip .tt-total .tt-val { color: var(--ink); }
+
+  .donut-wrap { display: flex; align-items: center; gap: 24px; }
+  .donut-legend { flex: 1; display: flex; flex-direction: column; gap: 9px; }
+  .donut-legend-item { display: flex; align-items: center; justify-content: space-between; font-size: 12px; }
+  .donut-legend-left { display: flex; align-items: center; gap: 8px; }
+  .donut-dot { width: 9px; height: 9px; border-radius: 50%; }
+  .donut-count { font-family: var(--mono); color: var(--ink-soft); }
+
+  .kpi-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .kpi-cell { background: var(--panel); display: flex; flex-direction: column; }
+  .kpi-cell .kpi-label { font-size: 12px; font-weight: 400; color: var(--ink-soft); padding: 14px 16px 0; }
+  .kpi-cell .kpi-num { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; padding: 6px 16px 14px; }
+  .kpi-num.accent { color: var(--accent); } .kpi-num.red { color: var(--red); } .kpi-num.amber { color: var(--amber); }
+  .kpi-cell .kpi-delta { font-size: 11px; color: var(--ink-faint); padding: 8px 16px; border-top: 1px solid var(--line-soft); }
+
+  .industry-list { display: flex; flex-direction: column; gap: 8px; }
+  .industry-item { display: grid; grid-template-columns: 160px 1fr 30px; align-items: center; gap: 10px; padding: 6px 0; }
+  .industry-item .iname { font-size: 12px; }
+  .industry-bar-track { height: 8px; background: var(--line-soft); border-radius: var(--radius); overflow: hidden; }
+  .industry-bar-fill { height: 100%; background: var(--accent); border-radius: var(--radius); }
+  .industry-item .icount { font-family: var(--mono); font-size: 11px; color: var(--ink-soft); text-align: right; }
+
+  .filter-axes { display: flex; gap: 24px; margin-bottom: 20px; flex-wrap: wrap; }
+  .axis-group .axis-label { font-size: 11px; font-weight: 600; color: var(--ink-faint); margin-bottom: 7px; }
+  .axis-chips { display: flex; gap: 7px; flex-wrap: wrap; }
+  .chip { font-family: var(--mono); font-size: 12px; padding: 5px 11px; border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink-soft); cursor: pointer; background: var(--panel); }
+  .chip.active { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+
+  .timeline-controls { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .timeline-wrap { background: var(--panel); border: 1px solid var(--line); padding: 140px 30px 30px; position: relative; overflow-x: auto; overflow-y: visible; border-radius: var(--radius); }
+  .timeline-axis { position: relative; height: 2px; background: var(--line); margin: 0 10px; min-width: 900px; }
+  .timeline-point { position: absolute; top: -6px; width: 14px; height: 14px; border-radius: 50%;
+    background: var(--panel); border: 2.5px solid var(--ink-faint); cursor: pointer; transform: translateX(-50%);
+    transition: transform 0.12s ease; }
+  .timeline-point:hover, .timeline-point.selected { transform: translateX(-50%) scale(1.35); }
+  .timeline-point.t-applied { border-color: var(--ink-soft); }
+  .timeline-point.t-assessment { border-color: var(--amber); background: var(--amber-soft); }
+  .timeline-point.t-interview { border-color: var(--accent); background: var(--accent-soft); }
+  .timeline-point.t-rejected { border-color: var(--red); background: var(--red-soft); }
+  .timeline-point.t-withdrawn { border-color: var(--plum); background: var(--plum-soft); }
+  .timeline-point.selected { box-shadow: 0 0 0 4px var(--paper), 0 0 0 5px var(--ink); }
+  .timeline-month-label { position: absolute; top: -26px; font-family: var(--mono); font-size: 10px; color: var(--ink-faint); transform: translateX(-50%); }
+  .hover-card { position: absolute; bottom: 34px; left: 50%; width: 220px; background: var(--panel-raised);
+    border: 1px solid var(--line-strong); border-radius: var(--radius); padding: 10px 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.45); pointer-events: none; z-index: 20; opacity: 0;
+    transform: translateX(-50%) translateY(4px); transition: opacity 0.12s ease, transform 0.12s ease; }
+  .timeline-point:hover .hover-card { opacity: 1; transform: translateX(-50%) translateY(0); transition-delay: 0.15s; }
+  .hover-card.anchor-left { left: 0; transform: translateX(0) translateY(4px); }
+  .timeline-point:hover .hover-card.anchor-left { transform: translateX(0) translateY(0); }
+  .hover-card.anchor-right { left: auto; right: 0; transform: translateX(0) translateY(4px); }
+  .timeline-point:hover .hover-card.anchor-right { transform: translateX(0) translateY(0); }
+  .hover-card .hc-title { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
+  .hover-card .hc-desc { font-size: 12px; color: var(--ink-soft); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hover-card .hc-meta { font-size: 11px; color: var(--ink-faint); margin-top: 6px; font-family: var(--mono); }
+  .timeline-detail { margin-top: 28px; border: 1px solid var(--line); background: var(--panel); padding: 18px 20px; border-radius: var(--radius); display: none; }
+  .timeline-detail.visible { display: block; }
+  .timeline-detail-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
+  .timeline-detail-head .co { font-size: 16px; font-weight: 600; }
+  .timeline-detail-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 14px; }
+  .timeline-detail-field .dl { font-size: 11px; color: var(--ink-faint); margin-bottom: 3px; }
+  .timeline-detail-field .dv { font-size: 13px; font-weight: 500; }
+  .timeline-detail-next { font-size: 12px; color: var(--ink-soft); padding-top: 12px; border-top: 1px solid var(--line-soft); line-height: 1.5; }
+  .timeline-empty-hint { font-size: 12px; color: var(--ink-faint); text-align: center; padding: 20px; }
+
+  .calendar-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; max-width: 340px; }
+  .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .cal-nav { background: transparent; border: 1px solid var(--line-strong); border-radius: 6px; color: var(--ink-soft);
+    width: 26px; height: 26px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+  .cal-nav:hover { background: var(--panel-raised); color: var(--ink); }
+  .cal-month-label { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .cal-dow { font-family: var(--mono); font-size: 10px; color: var(--ink-faint); text-align: center; padding: 4px 0; }
+  .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--ink-soft); border-radius: 6px; position: relative; }
+  .cal-day.other-month { color: var(--ink-faint); opacity: 0.4; }
+  .cal-day.today { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .cal-day.flagged::after { content: ''; position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; border-radius: 50%; background: var(--amber); }
+  .calendar-legend { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+  .cal-legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-soft); }
+  .cal-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .cal-dot-flag { background: var(--amber); } .cal-dot-today { background: var(--accent); }
+
+  footer { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); text-align: center; padding-top: 28px; margin-top: 8px; }
+  @media (max-width: 720px) {
+    .summary { grid-template-columns: repeat(2, 1fr); } .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .metrics-grid { grid-template-columns: 1fr; } .content-area { padding: 20px 16px 60px; }
+  }
+</style>
+<style>
+  /* v14 additions only (same variables as above) */
+  .content-header .hdr-right { display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap; justify-content: flex-end; }
+  .hb { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); }
+  .hb .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--up); margin-right: 6px; }
+  .hb.red { color: var(--red); } .hb.red .dot { background: var(--red); }
+  .tag { font-family: var(--mono); font-size: 10px; padding: 1px 7px; border: 1px solid var(--line-strong); border-radius: 999px; color: var(--ink-soft); }
+  .tag-copy { color: var(--amber); border-color: var(--amber); }
+  .review-table tbody tr.review-group td { padding: 8px 16px; font-size: 12px; font-weight: 600; color: var(--ink-soft); background: var(--panel-raised); }
+  .review-group .count { font-family: var(--mono); font-weight: 500; font-size: 11px; color: var(--ink-faint); margin-left: 8px; }
+  .review-item .evidence .cat { display: block; font-size: 11px; color: var(--ink-faint); margin-top: 3px; }
+  .badge-checks { position: relative; display: inline-block; margin-left: 6px; font-family: var(--mono); font-size: 10px; font-weight: 500;
+    color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 0 6px; cursor: pointer; }
+  .badge-checks .pop { display: none; position: fixed; z-index: 30; width: 250px; background: var(--panel-raised);
+    border: 1px solid var(--line-strong); border-radius: var(--radius); padding: 10px 12px; font-family: var(--sans); font-size: 12px; font-weight: 400;
+    color: var(--ink-soft); text-align: left; line-height: 1.45; box-shadow: 0 8px 24px rgba(0,0,0,0.45); }
+  .badge-checks.open .pop { display: block; }
+  .badge-checks .pop ul { margin: 6px 0 0; padding-left: 16px; }
+  .dlg-check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink); margin-top: 16px; }
+  .dlg-check input { accent-color: var(--accent); }
+  .dlg-line { font-size: 12px; color: var(--ink-faint); margin-top: 6px; line-height: 1.45; }
+  .dlg-line.on { color: var(--ink-soft); }
+  .dlg-msg { font-size: 12px; color: var(--red); margin-top: 12px; line-height: 1.45; }
+  .dlg-msg:empty { display: none; }
+</style>
+<style>
+  /* v15 additions only (same variables as above) */
+  [hidden] { display: none !important; }
+  .add-role { display: block; margin-top: 1px; padding: 0; border: none; background: none; font: inherit; font-size: 12px; font-weight: 400;
+    color: var(--ink-faint); opacity: 0.6; cursor: pointer; text-align: left; }
+  .add-role:hover, .add-role:focus-visible { opacity: 1; color: var(--accent); text-decoration: underline; }
+  .mine-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--amber); margin-left: 5px; vertical-align: middle; }
+  .panel-scrim { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 90; }
+  .panel-scrim.visible { display: block; }
+  .edit-panel { position: fixed; top: 0; right: 0; height: 100vh; width: 440px; max-width: 100vw; z-index: 95; display: flex; flex-direction: column;
+    background: var(--panel-raised); border-left: 1px solid var(--line-strong); box-shadow: -20px 0 50px rgba(0,0,0,0.45); }
+  .ep-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 18px 20px 12px; border-bottom: 1px solid var(--line); }
+  .ep-title { font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+  .ep-x { background: none; border: none; color: var(--ink-soft); font-size: 22px; line-height: 1; cursor: pointer; }
+  .ep-body { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+  .ep-section, .ep-stack { display: flex; flex-direction: column; gap: 12px; }
+  .ep-section { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; background: var(--panel); }
+  .ep-section h3 { font-size: 12px; font-weight: 600; margin: 0; color: var(--ink-soft); }
+  .ep-date { flex: 0 0 150px !important; }
+  .ep-label { display: flex; align-items: center; gap: 4px; margin-bottom: 5px; }
+  .field .ep-label label { margin: 0; }
+  .ep-reset { margin-left: auto; background: none; border: none; padding: 0; font-size: 11px; color: var(--accent); cursor: pointer; }
+  .ep-help { font-size: 11px; color: var(--ink-soft); margin: -1px 0 6px; line-height: 1.4; }
+  .ep-note { font-size: 11px; color: var(--ink-faint); margin-top: 4px; line-height: 1.4; }
+  .ep-note:empty { display: none; }
+  .ep-warn { color: var(--amber); }
+  .field select, .field textarea { width: 100%; font-size: 13px; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 6px;
+    background: var(--panel); color: var(--ink); font-family: inherit; }
+  .field textarea { min-height: 72px; resize: vertical; }
+  .field select:focus, .field textarea:focus { outline: none; border-color: var(--accent); }
+  .field input[type=date] { color-scheme: dark; }
+  html[data-theme="light"] .field input[type=date] { color-scheme: light; }
+  .ep-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .ep-steps li { display: flex; align-items: baseline; gap: 10px; font-size: 13px; }
+  .ep-steps .when { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); white-space: nowrap; }
+  .ep-steps .what { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .ep-steps .what small { display: block; color: var(--ink-faint); font-size: 11px; }
+  .ep-steps .what small.tag-new { color: var(--amber); font-family: var(--mono); font-size: 10px; }
+  .ep-steps li.removing .what { text-decoration: line-through; opacity: 0.55; }
+  .ep-changes .what b { font-weight: 600; color: var(--ink-soft); }
+  .ep-foot { border-top: 1px solid var(--line); padding: 12px 20px 16px; }
+  .ep-buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+  .ep-discard { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--amber); }
+  .timeline-point.t-other { border-color: var(--ink-faint); }
+  .timeline-point.manual { border-style: dashed; }
+</style>
+<style>
+  /* v16 additions only: the Normal / Kanban switch and the board (same variables as above) */
+  .view-switch { display: flex; background: var(--panel-raised); border: 1px solid var(--line); border-radius: 8px; padding: 3px; gap: 2px; }
+  .vs-opt { background: transparent; border: none; border-radius: 6px; padding: 5px 14px; cursor: pointer; font-size: 12px; font-weight: 500; color: var(--ink-soft); }
+  .vs-opt.active { background: var(--panel); color: var(--ink); }
+  .board { display: none; gap: 12px; align-items: flex-start; overflow-x: auto; padding-bottom: 10px; }
+  /* no scrollbars inside the board only: it still scrolls with the wheel and the trackpad, and the wheel over a column title moves it sideways */
+  .board, .col-cards { scrollbar-width: none; }
+  .board::-webkit-scrollbar, .col-cards::-webkit-scrollbar { display: none; }
+  #pipeline.kanban .board { display: flex; }
+  #pipeline.kanban #pipeline-table, #pipeline.kanban #pipeline-no-results { display: none !important; }
+  .col { flex: 0 0 260px; width: 260px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); display: flex; flex-direction: column; }
+  .col-head { display: flex; align-items: center; gap: 8px; padding: 10px 10px 8px 12px; border-bottom: 1px solid var(--line-soft); }
+  .col-count { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); }
+  .col-hide { margin-left: auto; background: none; border: 1px solid transparent; border-radius: 6px; color: var(--ink-faint); cursor: pointer; font-size: 14px; line-height: 1; padding: 2px 7px; }
+  .col-hide:hover { border-color: var(--line-strong); color: var(--ink); }
+  .col-cards { display: flex; flex-direction: column; gap: 8px; padding: 10px; max-height: calc(100vh - 230px); overflow-y: auto; }
+  .col-empty { font-size: 12px; color: var(--ink-faint); text-align: center; padding: 14px 0; }
+  .col-more { align-self: center; }
+  .col.collapsed { flex: 0 0 44px; width: 44px; }
+  .col-strip { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; padding: 12px 0; background: none; border: none; cursor: pointer;
+    color: var(--ink-soft); font-size: 12px; font-weight: 600; }
+  .col-strip .col-name { writing-mode: vertical-rl; }
+  .col-strip:hover { color: var(--ink); }
+  .board.dragging .col.drop-ok { outline: 2px dashed var(--accent); outline-offset: -2px; }
+  .board.dragging .col.drop-here { background: var(--accent-soft); }
+  :root { --kc-shadow: 0 1px 2px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.22); --kc-shadow-up: 0 5px 14px rgba(0,0,0,0.42); }
+  html[data-theme="light"] { --kc-shadow: 0 1px 2px rgba(20,24,26,0.06), 0 2px 6px rgba(20,24,26,0.07); --kc-shadow-up: 0 6px 16px rgba(20,24,26,0.13); }
+  .kcard { background: var(--panel-raised); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; cursor: grab; display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ink-soft);
+    box-shadow: var(--kc-shadow); transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease; }
+  .kcard:hover { border-color: var(--line-strong); transform: translateY(-2px); box-shadow: var(--kc-shadow-up); }
+  .kcard:active { cursor: grabbing; }
+  /* the hover card beside a board card: fixed to the window, so no column or screen edge cuts it off; it never takes the pointer */
+  .kc-hover { position: fixed; z-index: 85; width: 330px; max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); overflow: hidden; pointer-events: none;
+    display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; background: var(--panel-raised); border: 1px solid var(--line-strong); border-radius: 12px;
+    box-shadow: var(--kc-shadow-up); font-size: 12px; color: var(--ink-soft); animation: hv-in 0.12s ease-out; }
+  .kc-hover .hv-title { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .kc-hover .hv-faint { color: var(--ink-faint); }
+  .kc-hover .hv-row { display: grid; grid-template-columns: 88px 1fr; gap: 8px; }
+  .kc-hover .hv-ev { display: grid; grid-template-columns: 80px 1fr; gap: 8px; }
+  .kc-hover .hv-row > span:first-child, .kc-hover .hv-ev > span:first-child { color: var(--ink-faint); }
+  .kc-hover .hv-ev > span:first-child { font-family: var(--mono); font-size: 11px; }
+  .kc-hover .hv-quiet > span:last-child { color: var(--amber); }
+  .kc-hover .hv-sub { margin-top: 6px; font-size: 11px; font-weight: 600; color: var(--ink-faint); }
+  .kc-hover .hv-line, .kc-hover .hv-row > span, .kc-hover .hv-ev > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  @keyframes hv-in { from { opacity: 0; transform: translateY(2px); } }
+  /* the edit panel slides in and out and the dimmed background fades, in Normal and Kanban (a browser without these features just shows and hides it) */
+  .edit-panel { transition: transform 0.2s ease, opacity 0.2s ease, display 0.2s allow-discrete; }
+  .edit-panel[hidden] { transform: translateX(32px); opacity: 0; pointer-events: none; }
+  @starting-style { .edit-panel:not([hidden]) { transform: translateX(32px); opacity: 0; } }
+  .panel-scrim { opacity: 0; transition: opacity 0.2s ease, display 0.2s allow-discrete; }
+  .panel-scrim.visible { opacity: 1; }
+  .panel-scrim:not(.visible) { pointer-events: none; }
+  @starting-style { .panel-scrim.visible { opacity: 0; } }
+  /* a column opening or closing, and a card settling into its column after a drop or Undo */
+  .col.opening { animation: col-open 0.18s ease-out; overflow: hidden; }
+  .col.shutting { animation: col-shut 0.18s ease-out; overflow: hidden; }
+  @keyframes col-open { from { flex-basis: 44px; width: 44px; opacity: 0.6; } }
+  @keyframes col-shut { from { flex-basis: 260px; width: 260px; } }
+  .kcard.settle { animation: kc-settle 0.28s ease-out; }
+  @keyframes kc-settle { from { opacity: 0; transform: translateY(-8px); } }
+  /* the computer's reduce motion setting: no animations at all */
+  @media (prefers-reduced-motion: reduce) {
+    .kcard, .kc-hover, .col, .edit-panel, .panel-scrim { transition: none !important; animation: none !important; }
+    .kcard:hover { transform: none; }
+  }
+  .kcard:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .kc-top { display: flex; align-items: center; gap: 4px; min-width: 0; }
+  .kc-company { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .kc-company, .kc-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .kc-top .mine-dot { flex-shrink: 0; margin-left: 2px; }
+  .kc-quiet { margin-left: auto; flex-shrink: 0; font-family: var(--mono); font-size: 10px; padding: 1px 6px; border-radius: 999px; background: var(--amber-soft); color: var(--amber); }
+  .kc-foot { display: flex; gap: 8px; justify-content: space-between; align-items: center; font-family: var(--mono); font-size: 11px; color: var(--ink-faint); min-width: 0; margin-top: 2px; }
+  .kc-foot .kc-line { font-family: var(--sans); font-size: 10.5px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--ink-soft); }
+  .kcard .add-role { margin: 0; }
+  .move-bar { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 80; display: flex; align-items: center; gap: 14px; max-width: calc(100vw - 32px);
+    background: var(--panel-raised); border: 1px solid var(--line-strong); border-radius: var(--radius); padding: 10px 14px; font-size: 13px; color: var(--ink);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.45); }
+</style>
+<style>
+  /* v17 additions only: the List / Calendar switch in Timeline, the calendar and its day list, the Coming up strip, the panel's Upcoming dates.
+     Status colours reused where they do not clash: Applied grey, Interview or assessment teal, Rejected red, Follow up orange (as the Follow-up
+     planning calendar); Offer green and Withdrawn violet are new (the dashboard's Offer is the Interview teal, and its Withdrawn grey is too close
+     to Applied); Other step is a grey square and Your date a hollow ring, so shape tells them apart too, and every type is named in words. */
+  :root { --t-offer: #7fcf8e; --t-withdrawn: #c3a0e8; }
+  html[data-theme="light"] { --t-offer: #2f7d3e; --t-withdrawn: #7a4fa3; }
+  html[data-theme="light"] .field input[type=time] { color-scheme: light; }
+  .tl-cal-only { display: none; }
+  #timeline.cal .tl-cal-only { display: inline; }
+  #timeline.cal .tl-list-only, #timeline.cal .timeline-wrap, #timeline.cal #timeline-detail, #timeline.cal #timeline-empty-hint { display: none !important; }
+  .tl-cal { display: none; }
+  #timeline.cal .tl-cal { display: block; }
+  .tlc-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .tlc-title { font-size: 15px; font-weight: 600; margin: 0; min-width: 150px; text-align: center; }
+  .tlc-totals { font-size: 12px; color: var(--ink-soft); margin-bottom: 12px; }
+  .tlc-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .tlc-dow { font-family: var(--mono); font-size: 10px; color: var(--ink-faint); text-align: center; padding: 4px 0; }
+  .tlc-cell { min-height: 64px; border-radius: 8px; padding: 6px 7px; font-size: 12px; color: var(--ink-soft); }
+  .tlc-cell.out { color: var(--ink-faint); opacity: 0.4; }
+  button.tlc-cell { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; text-align: left; font: inherit; font-size: 12px; cursor: pointer;
+    background: var(--panel); border: 1px solid var(--line); color: var(--ink-soft); }
+  button.tlc-cell:hover { border-color: var(--line-strong); }
+  button.tlc-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .tlc-cell.today { border-color: var(--accent); background: var(--accent-soft); }
+  .tlc-cell.today .tlc-n { color: var(--accent); font-weight: 700; }
+  .tlc-cell.sel { box-shadow: inset 0 0 0 2px var(--ink); }
+  .tlc-dots { display: flex; flex-wrap: wrap; gap: 3px 7px; }
+  .tlc-dot { display: inline-flex; align-items: center; gap: 2px; }
+  .tlc-dot b { font-family: var(--mono); font-size: 10px; font-weight: 500; color: var(--ink-faint); }
+  .cd { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; box-sizing: border-box; }
+  .cd-applied { background: var(--ink-soft); } .cd-intass { background: var(--accent); } .cd-offer { background: var(--t-offer); }
+  .cd-rejected { background: var(--red); } .cd-withdrawn { background: var(--t-withdrawn); } .cd-follow { background: var(--amber); }
+  .cd-other { background: var(--ink-faint); border-radius: 1px; } .cd-mine { background: transparent; border: 2px solid var(--ink); }
+  .tlc-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line-soft); }
+  .tlc-key { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-soft); }
+  .tlc-day { margin-top: 16px; border: 1px solid var(--line); background: var(--panel); border-radius: var(--radius); padding: 14px 16px; animation: tl-in 0.18s ease-out; }
+  .tlc-day[hidden], .comingup[hidden] { display: none; }
+  .tlc-day-title { font-size: 14px; font-weight: 600; margin: 0 0 8px; }
+  .tlc-group { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--ink-faint); margin: 10px 0 4px; }
+  .tlc-item { display: flex; align-items: baseline; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--line-soft); font-size: 13px; cursor: pointer; min-width: 0; }
+  .tlc-co { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: var(--ink); cursor: pointer; text-align: left; }
+  .tlc-co:hover { text-decoration: underline; }
+  .tlc-role { color: var(--ink-soft); }
+  .tlc-what { color: var(--ink-faint); font-size: 12px; margin-left: auto; text-align: right; overflow-wrap: anywhere; }
+  .tlc-item .add-role { margin: 0; }
+  .tlc-more { margin-top: 10px; }
+  .comingup { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin-bottom: 16px; animation: tl-in 0.18s ease-out; }
+  .cu-title { align-self: center; font-size: 12px; font-weight: 600; color: var(--ink-soft); margin-right: 4px; }
+  .cu-item { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; max-width: 260px; padding: 7px 11px; cursor: pointer; text-align: left; font: inherit;
+    background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--ink); border-radius: 8px; color: var(--ink-soft); }
+  .cu-item:hover { border-color: var(--line-strong); border-left-color: var(--ink); }
+  .cu-when { font-family: var(--mono); font-size: 11px; color: var(--ink); }
+  .cu-far { font-size: 11px; color: var(--accent); font-weight: 600; }
+  .cu-what { font-size: 12px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cu-more { align-self: center; background: none; border: none; color: var(--accent); cursor: pointer; font: inherit; font-size: 12px; }
+  @keyframes tl-in { from { opacity: 0; transform: translateY(4px); } }
+  @media (prefers-reduced-motion: reduce) { .tlc-day, .comingup { animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-mark">⊞</span>
+      <div><div class="brand-name">Job Tracker</div><div class="brand-sub" id="brand-sub">—</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" data-tab="priority"><span class="nav-label">Priority</span><span class="badge review-badge" id="nav-review">—</span></div>
+      <div class="nav-item" data-tab="pipeline"><span class="nav-label">Pipeline</span><span class="badge" id="nav-pipeline">—</span></div>
+      <div class="nav-item" data-tab="timeline"><span class="nav-label">Timeline</span></div>
+      <div class="nav-item" data-tab="metrics"><span class="nav-label">Metrics</span></div>
+      <div class="nav-item" data-tab="stale"><span class="nav-label">Gone quiet</span><span class="badge red" id="nav-stale">—</span></div>
+      <div class="nav-item" data-tab="filter"><span class="nav-label">By industry / role</span></div>
+      <div class="nav-item" data-tab="discarded"><span class="nav-label">Discarded</span><span class="badge" id="nav-discarded">—</span></div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="theme-toggle" id="theme-toggle">
+        <button class="theme-opt active" data-theme="dark">🌙</button>
+        <button class="theme-opt" data-theme="light">☀️</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="content-area">
+    <header class="content-header">
+      <h1 class="page-heading" id="page-heading">Priority</h1>
+      <span class="hdr-right">
+        <span class="hb" id="hb"></span>
+        <span class="synced" id="synced"></span>
+        <span class="tag" id="tag-v14">v19</span><span class="tag tag-copy" id="tag-copy" style="display:none">copy</span>
+      </span>
+    </header>
+
+    <!-- PRIORITY -->
+    <div class="view active" id="priority">
+      <div class="summary" id="summary"></div>
+      <div class="section">
+        <div class="section-head"><h2>Needs your review</h2><span class="hint" id="review-hint"></span></div>
+        <div id="review-container"></div>
+      </div>
+      <div class="section">
+        <div class="section-head"><h2>Just moved</h2><span class="hint">most recent events recorded from your inbox</span></div>
+        <div class="moved-list" id="moved-list"></div>
+      </div>
+    </div>
+
+    <!-- PIPELINE -->
+    <div class="view" id="pipeline">
+      <div class="section-head"><span class="hint" id="pipeline-count">—</span>
+        <div class="view-switch" role="group" aria-label="Pipeline view"><button type="button" class="vs-opt active" data-view="normal" aria-pressed="true">Normal</button><button type="button" class="vs-opt" data-view="kanban" aria-pressed="false">Kanban</button></div></div>
+      <div class="controls-row">
+        <div class="search-box"><span class="icon">⌕</span><input type="text" id="pipeline-search" placeholder="Search company or role…"></div>
+        <select class="dropdown" id="pipeline-status-filter"><option value="all">All statuses</option></select>
+        <select class="dropdown" id="pipeline-industry-filter"><option value="all">All industries</option></select>
+        <button class="btn btn-keep" id="confirm-all-btn" style="display:none">Confirm all…</button>
+      </div>
+      <table id="pipeline-table">
+        <thead><tr><th>Company</th><th>Industry</th><th>Status</th><th>Stage</th><th>Last activity</th><th></th></tr></thead>
+        <tbody id="pipeline-tbody"></tbody>
+      </table>
+      <div class="no-results" id="pipeline-no-results">No applications match these filters.</div>
+      <div class="board" id="board"></div>
+    </div>
+
+    <!-- TIMELINE -->
+    <div class="view" id="timeline">
+      <div class="section-head"><span class="hint tl-list-only">each point is one real email event — hover to preview, click for detail</span><span class="hint tl-cal-only">each dot is applications on that day — click a day to list them</span>
+        <div class="view-switch" role="group" aria-label="Timeline view"><button type="button" class="vs-opt active" data-tlview="list" aria-pressed="true">List</button><button type="button" class="vs-opt" data-tlview="calendar" aria-pressed="false">Calendar</button></div></div>
+      <div class="comingup" id="comingup" aria-label="Coming up" hidden></div>
+      <div class="timeline-controls" id="timeline-controls">
+        <span class="chip active" data-tl-filter="all">All events</span>
+        <span class="chip" data-tl-filter="applied">Applied</span>
+        <span class="chip" data-tl-filter="assessment">Assessment</span>
+        <span class="chip" data-tl-filter="interview">Interview</span>
+        <span class="chip" data-tl-filter="rejected">Rejected</span>
+        <span class="chip" data-tl-filter="withdrawn">Withdrawn</span>
+      </div>
+      <div class="timeline-wrap"><div class="timeline-axis" id="timeline-axis"></div></div>
+      <div class="timeline-detail" id="timeline-detail">
+        <div class="timeline-detail-head"><div class="co" id="td-co"></div><div class="hint" id="td-date"></div></div>
+        <div class="timeline-detail-grid">
+          <div class="timeline-detail-field"><div class="dl">Role</div><div class="dv" id="td-role"></div></div>
+          <div class="timeline-detail-field"><div class="dl">Industry</div><div class="dv" id="td-industry"></div></div>
+          <div class="timeline-detail-field"><div class="dl">Event</div><div class="dv" id="td-status"></div></div>
+          <div class="timeline-detail-field"><div class="dl">Source</div><div class="dv" id="td-source">Gmail sync</div></div>
+        </div>
+        <div class="timeline-detail-next"><span id="td-detail"></span></div>
+      </div>
+      <div class="timeline-empty-hint" id="timeline-empty-hint">Click a point on the timeline above to see its detail here.</div>
+      <div class="tl-cal" id="tl-cal">
+        <div class="tlc-head">
+          <button class="cal-nav" id="tlc-prev" type="button" aria-label="Previous month">‹</button>
+          <h2 class="tlc-title" id="tlc-title">—</h2>
+          <button class="cal-nav" id="tlc-next" type="button" aria-label="Next month">›</button>
+          <button class="btn btn-sm" id="tlc-today" type="button">Today</button>
+        </div>
+        <div class="tlc-totals" id="tlc-totals" aria-live="polite"></div>
+        <div class="tlc-grid" id="tlc-grid"></div>
+        <div class="tlc-legend" id="tlc-legend"></div>
+        <div class="tlc-day" id="tlc-day" hidden></div>
+      </div>
+    </div>
+
+    <!-- METRICS -->
+    <div class="view" id="metrics">
+      <div class="section-head"><span class="hint" id="metrics-sub">—</span></div>
+      <div class="kpi-row" id="kpi-row"></div>
+      <div class="metrics-top">
+        <div class="card chart-card">
+          <h3>Applications by week</h3>
+          <div class="card-sub">Applied vs. rejections landing the same week</div>
+          <svg id="line-chart-svg" viewBox="0 0 720 220" preserveAspectRatio="xMidYMid meet">
+            <g id="chart-gridlines"></g>
+            <polyline id="line-applied" class="chart-line" points=""/>
+            <polyline id="line-rejected" class="chart-line chart-line-rejected" points=""/>
+            <g id="chart-dots"></g><g id="chart-labels"></g>
+          </svg>
+          <div class="chart-tooltip" id="chart-tooltip"></div>
+          <div class="legend-row">
+            <div class="legend-item"><span class="legend-swatch" style="background:var(--ink-soft)"></span>Applied</div>
+            <div class="legend-item"><span class="legend-swatch" style="background:var(--red)"></span>Rejected</div>
+          </div>
+        </div>
+      </div>
+      <div class="metrics-grid">
+        <div class="card">
+          <h3>Outcome mix</h3><div class="card-sub" id="outcome-sub">where every application currently stands</div>
+          <div class="donut-wrap">
+            <svg id="donut-svg" width="150" height="150" viewBox="0 0 42 42"></svg>
+            <div class="donut-legend" id="donut-legend"></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>By industry</h3><div class="card-sub">application count per sector</div>
+          <div class="industry-list" id="industry-list"></div>
+        </div>
+      </div>
+      <div class="metrics-grid">
+        <div class="card">
+          <h3>Where rejections land</h3><div class="card-sub" id="rejstage-sub">stage reached before the rejection came</div>
+          <div class="industry-list" id="rejstage-list"></div>
+        </div>
+        <div class="card">
+          <h3>By source</h3><div class="card-sub">how each application was submitted</div>
+          <div class="industry-list" id="source-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GONE QUIET -->
+    <div class="view" id="stale">
+      <div class="section-head"><span class="hint">no activity in 3+ weeks since the last real signal</span></div>
+      <div class="stale-list" id="stale-list"></div>
+      <div class="section" style="margin-top: 32px;">
+        <div class="section-head"><h2>Follow-up planning</h2><span class="hint">suggested nudge dates = last signal + 1 week</span></div>
+        <div class="calendar-card">
+          <div class="calendar-header">
+            <button class="cal-nav" id="cal-prev">‹</button>
+            <div class="cal-month-label" id="cal-month-label">—</div>
+            <button class="cal-nav" id="cal-next">›</button>
+          </div>
+          <div class="calendar-grid" id="calendar-grid"></div>
+          <div class="calendar-legend">
+            <div class="cal-legend-item"><span class="cal-dot cal-dot-flag"></span>Suggested follow-up date</div>
+            <div class="cal-legend-item"><span class="cal-dot cal-dot-today"></span>Today</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BY INDUSTRY / ROLE -->
+    <div class="view" id="filter">
+      <div class="section-head"><span class="hint">combine both to narrow the pipeline</span></div>
+      <div class="filter-axes">
+        <div class="axis-group"><div class="axis-label">Industry</div><div class="axis-chips" id="filter-industry-chips"></div></div>
+        <div class="axis-group"><div class="axis-label">Role type</div><div class="axis-chips" id="filter-role-chips"></div></div>
+      </div>
+      <table>
+        <thead><tr><th>Company</th><th>Role</th><th>Industry</th><th>Role type</th><th>Status</th></tr></thead>
+        <tbody id="filter-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- DISCARDED (v14) -->
+    <div class="view" id="discarded">
+      <div class="section-head"><span class="hint" id="discarded-hint">—</span></div>
+      <table id="discarded-table">
+        <thead><tr><th>Company</th><th>Discarded</th><th>Was confirmed</th><th>Emails ignored since</th><th></th></tr></thead>
+        <tbody id="discarded-tbody"></tbody>
+      </table>
+      <div class="empty-state" id="discarded-empty">Nothing has been discarded. A company you delete with “Ignore future emails” ticked, or a name you discard from the review queue, appears here and can be restored.</div>
+    </div>
+
+    <footer id="footer">reading db/tracker.db — every figure is a live query</footer>
+  </main>
+</div>
+
+<div class="dialog-overlay" id="dialog-overlay">
+  <div class="dialog-box" role="dialog" aria-modal="true">
+    <div class="dialog-title" id="dlg-title">Confirm</div>
+    <div class="dialog-desc" id="dlg-desc"></div>
+    <div class="dialog-fields" id="dlg-fields">
+      <div class="field"><label for="dlg-company">Company</label><input type="text" id="dlg-company"></div>
+      <div class="field"><label for="dlg-role">Role</label><input type="text" id="dlg-role"></div>
+      <div class="field-row">
+        <div class="field"><label for="dlg-industry">Industry</label><input type="text" id="dlg-industry"></div>
+        <div class="field"><label for="dlg-status">Status</label><input type="text" id="dlg-status"></div>
+      </div>
+    </div>
+    <div id="dlg-remember-row" style="display:none">
+      <label class="dlg-check"><input type="checkbox" id="dlg-remember" checked> Ignore future emails from this company</label>
+      <div class="dlg-line" id="dlg-remember-on">Ticked: the name goes on the Discarded tab and later emails from it go quietly to the quiet log.</div>
+      <div class="dlg-line" id="dlg-remember-off">Unticked: only this item is removed; later emails from it are filed as normal.</div>
+    </div>
+    <div class="dlg-msg" id="dlg-msg"></div>
+    <div class="dialog-footer">
+      <button class="btn btn-drop" id="dlg-cancel">Cancel</button>
+      <button class="btn btn-primary" id="dlg-save">Confirm and add</button>
+    </div>
+  </div>
+</div>
+
+<div class="dialog-overlay" id="dialog2-overlay">
+  <div class="dialog-box" role="dialog" aria-modal="true">
+    <div class="dialog-title" id="dlg2-title"></div>
+    <div class="dialog-desc" id="dlg2-desc"></div>
+    <div id="dlg2-check-row" style="display:none">
+      <label class="dlg-check"><input type="checkbox" id="dlg2-check" checked> <span id="dlg2-check-label"></span></label>
+      <div class="dlg-line" id="dlg2-on"></div>
+      <div class="dlg-line" id="dlg2-off"></div>
+    </div>
+    <div class="dlg-msg" id="dlg2-msg"></div>
+    <div class="dialog-footer">
+      <button class="btn" id="dlg2-cancel">Cancel</button>
+      <button class="btn btn-primary" id="dlg2-ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="panel-scrim" id="panel-scrim"></div>
+<aside class="edit-panel" id="edit-panel" role="dialog" aria-modal="true" aria-labelledby="ep-title" hidden>
+  <div class="ep-head">
+    <div><div class="ep-title" id="ep-title"></div><div class="hint" id="ep-sub"></div></div>
+    <button class="ep-x" id="ep-x" type="button" aria-label="Close">×</button>
+  </div>
+  <div class="ep-body">
+    <div class="ep-section">
+      <h3>Add a step you did</h3>
+      <div class="field"><label for="ep-step-type">What did you do?</label>
+        <div class="ep-help">Something you did yourself, like an interview. Pick it, then Save. It goes into Timeline and the Stage column.</div>
+        <select id="ep-step-type"></select></div>
+      <div id="ep-newtype" class="ep-stack" hidden>
+        <div class="field"><label for="ep-newtype-label">Name of the new step type</label><input type="text" id="ep-newtype-label" maxlength="60"></div>
+        <div class="field"><label for="ep-newtype-status">Does it change the status too?</label><select id="ep-newtype-status"></select></div>
+      </div>
+      <div class="field-row">
+        <div class="field ep-date"><label for="ep-step-date">Date</label><input type="date" id="ep-step-date"></div>
+        <div class="field"><label for="ep-step-note">Note (optional)</label><input type="text" id="ep-step-note" maxlength="500"></div>
+      </div>
+    </div>
+    <div class="ep-section" id="ep-due">
+      <h3>Upcoming dates</h3>
+      <div class="ep-help">A date still to come, like an interview or an assessment deadline. It shows in Timeline and in Coming up. It does not change the status.</div>
+      <div class="field-row">
+        <div class="field"><label for="ep-due-kind">Kind</label><select id="ep-due-kind"></select></div>
+        <div class="field ep-date"><label for="ep-due-date">Date</label><input type="date" id="ep-due-date"></div>
+      </div>
+      <div class="field-row">
+        <div class="field ep-date"><label for="ep-due-time">Time (as written in the invite)</label><input type="time" id="ep-due-time"></div>
+        <div class="field"><label for="ep-due-note">Note (optional)</label><input type="text" id="ep-due-note" maxlength="200"></div>
+      </div>
+      <ul class="ep-steps" id="ep-dates"></ul>
+    </div>
+    <div class="ep-section" id="ep-fields">
+      <div class="field" data-f="company">
+        <div class="ep-label"><label for="ep-company">Company</label><span class="mine-dot" title="Your edit" hidden></span><button class="ep-reset" type="button" hidden>Reset to automatic</button></div>
+        <input type="text" id="ep-company" maxlength="120"><div class="ep-note ep-warn"></div>
+      </div>
+      <div class="field" data-f="role">
+        <div class="ep-label"><label for="ep-role">Role</label><span class="mine-dot" title="Your edit" hidden></span><button class="ep-reset" type="button" hidden>Reset to automatic</button></div>
+        <input type="text" id="ep-role" maxlength="150"><div class="ep-note"></div>
+      </div>
+      <div class="field" data-f="industry">
+        <div class="ep-label"><label for="ep-industry">Industry</label><span class="mine-dot" title="Your edit" hidden></span><button class="ep-reset" type="button" hidden>Reset to automatic</button></div>
+        <input type="text" id="ep-industry" maxlength="80" list="ep-industries"><div class="ep-note"></div>
+      </div>
+      <div class="field" data-f="status">
+        <div class="ep-label"><label for="ep-status">Status</label><span class="mine-dot" title="Your edit" hidden></span><button class="ep-reset" type="button" hidden>Reset to automatic</button></div>
+        <div class="ep-help">Where the application stands overall. The counts, filters and Metrics use it.</div>
+        <select id="ep-status"></select><div class="ep-note"></div>
+      </div>
+      <div class="field" data-f="stage">
+        <div class="ep-label"><label for="ep-stage">Stage</label><span class="mine-dot" title="Your edit" hidden></span><button class="ep-reset" type="button" hidden>Reset to automatic</button></div>
+        <div class="ep-help">A short note on the latest step, shown in the Stage column.</div>
+        <input type="text" id="ep-stage" maxlength="120"><div class="ep-note"></div>
+      </div>
+      <div class="field" data-f="notes">
+        <div class="ep-label"><label for="ep-notes">Notes</label><span class="mine-dot" title="Your edit" hidden></span><button class="ep-reset" type="button" hidden>Reset to automatic</button></div>
+        <textarea id="ep-notes" maxlength="2000"></textarea><div class="ep-note"></div>
+      </div>
+    </div>
+    <div class="ep-section">
+      <h3>Steps you recorded</h3>
+      <ul class="ep-steps" id="ep-steps"></ul>
+    </div>
+    <div class="ep-section">
+      <h3>Changes you made</h3>
+      <div class="ep-help">Your earlier changes to this application, newest first. For reading only.</div>
+      <ul class="ep-steps ep-changes" id="ep-changes"></ul>
+    </div>
+  </div>
+  <div class="ep-foot">
+    <div class="ep-discard" id="ep-discard" hidden><span>Discard your unsaved changes?</span>
+      <button class="btn btn-sm btn-drop" id="ep-discard-yes" type="button">Discard changes</button>
+      <button class="btn btn-sm" id="ep-discard-no" type="button">Keep editing</button></div>
+    <div class="dlg-msg" id="ep-msg"></div>
+    <div class="ep-buttons"><button class="btn" id="ep-cancel" type="button">Cancel</button><button class="btn btn-primary" id="ep-save" type="button">Save</button></div>
+  </div>
+</aside>
+<datalist id="ep-industries"></datalist>
+<div class="kc-hover" id="kc-hover" aria-hidden="true" hidden></div>
+<div class="move-bar" id="move-bar" role="status" aria-live="polite" hidden><span id="move-bar-text"></span><button class="btn btn-sm" id="move-bar-undo" type="button">Undo</button></div>
+
+<script src="/live_v19.js"></script>
+</body>
+</html>

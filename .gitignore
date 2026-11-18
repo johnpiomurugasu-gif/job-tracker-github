@@ -1,0 +1,35 @@
+# Folders that hold data, keys, logs or local tools
+secrets/
+db/
+logs/
+scratch/
+venv/
+.venv/
+
+# Caches
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+
+# Data and log files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.log
+*.csv
+
+# Settings, tokens and client secrets
+.env
+.env.*
+*.env
+token*
+*token*.json
+client_secret*
+credentials.json
+
+# Mac
+.DS_Store
